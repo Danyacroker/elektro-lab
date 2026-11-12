@@ -12,6 +12,7 @@ import { MODELS_E } from './models_e.js';
 import { route, obstacles } from './schematic.js';
 const MODELS = { ...MODELS_A, ...MODELS_B, ...MODELS_C, ...MODELS_D, ...MODELS_E };
 export const BOARD = { w: 170, h: 100 };
+const COARSE = matchMedia('(pointer: coarse)').matches, HITMAT = new THREE.MeshBasicMaterial({ visible: false });
 const snap = (v, s) => Math.round(v / s) * s;
 
 export class Scene3D {
@@ -92,6 +93,7 @@ export class Scene3D {
     const m = new THREE.Mesh(new THREE.TubeGeometry(curve, Math.max(24, Math.round(len * 1.5)), rad, 7), mat(0x8a8f96, { roughness: 0.45, emissive: 0xff2200, emissiveIntensity: 0, transparent: true }));
     m.userData.wire = w; m.userData.curve = curve; m.userData.len = len; w.ph = w.ph || 0;
     if (!w.len) w.len = Math.max(0.5, +(len * 0.06).toFixed(1));
+    if (COARSE) { const hit = new THREE.Mesh(new THREE.TubeGeometry(curve, Math.max(12, Math.round(len / 2)), 0.8, 5), HITMAT); hit.userData.wire = w; m.add(hit); }   // на сенсорном экране по проводу легче попасть пальцем
     this.scene.add(m); this.wires.set(w, m);
   }
   removeWire(w) { const m = this.wires.get(w); if (m) { this.scene.remove(m); m.geometry.dispose(); this.wires.delete(w); } }

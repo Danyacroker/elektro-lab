@@ -26,7 +26,7 @@ let progress = store.get('progress', {});
 const game = {
   circuit: { comps: [], wires: [] }, selected: null, placeType: null, showVals: true, level: null, mode: 'menu',
   flags: new Set(), done: 0, hold: 0, burns: 0, usedSol: false, hintN: 0, wn: 0, un: 0,
-  select(o) { this.selected = o; if (this.scene.inspectId && (!o || o.id !== this.scene.inspectId)) this.scene.inspect(null); renderInspector(); },
+  select(o) { this.selected = o; updateFab(); if (this.scene.inspectId && (!o || o.id !== this.scene.inspectId)) this.scene.inspect(null); renderInspector(); },
   hud(t) { $('hud').textContent = t || defaultHud(); },
   changed(light) { if (!light) { renderInspector(); if (this.mode === 'sandbox') saveSandbox(); } },
   addComp(type, x, y) {
@@ -218,7 +218,13 @@ $('btnTask').onclick = showTask; $('btnSolve').onclick = () => { if (confirm('С
 $('btnHint').onclick = () => { const L = game.level; if (L) toast('', '💡 ' + L.hints[game.hintN++ % L.hints.length], 9000); };
 $('btnXray').onclick = () => setXray(!game.scene.xray);
 $('btnVals').onclick = () => { game.showVals = !game.showVals; $('btnVals').classList.toggle('on', game.showVals); };
-$('viewSel').onchange = e => { $('views').className = e.target.value === '3d' ? 'v3d' : e.target.value === 'sch' ? 'vsch' : ''; game.scene.resize(); game.scene.resetView(); };
+// ---------- плавающие кнопки поверх рабочей области: удалить, вид, показать всё ----------
+const VIEWS = ['3d', 'sch', 'both'], VNAME = { '3d': '🧊 3D', sch: '📐 Схема', both: '◫ Оба' };
+function updateFab() { const s = game.selected; $('fabDel').classList.toggle('hidden', !s || !!(s.type && s.fixed)); $('fabDesel').classList.toggle('hidden', !s); $('fabView').textContent = VNAME[VIEWS[(VIEWS.indexOf($('viewSel').value) + 1) % 3]]; }
+$('fabDel').onclick = () => game.remove(game.selected); $('fabDesel').onclick = () => { game.scene.cancel(); game.pendRef = null; game.select(null); };
+$('fabView').onclick = () => { const v = $('viewSel'); v.value = VIEWS[(VIEWS.indexOf(v.value) + 1) % 3]; v.onchange({ target: v }); };
+$('fabFit').onclick = () => { game.scene.resetView(); game.sch.vb = null; game.sch.render(); };
+$('viewSel').onchange = e => { $('views').className = e.target.value === '3d' ? 'v3d' : e.target.value === 'sch' ? 'vsch' : ''; game.scene.resize(); game.scene.resetView(); game.sch.render(); updateFab(); };
 $('btnReset').onclick = () => { if (game.mode === 'build' || game.mode === 'draw') { if (confirm('Начать задание заново?')) rd.restart(); } else if (game.mode === 'lab') { if (confirm('Начать лабораторную работу заново? Таблица измерений будет очищена.')) labs.restart(); } else if (game.mode === 'level') { if (confirm('Начать уровень заново?')) startLevel(game.li); } else if (confirm('Очистить панель?')) { load({ comps: [], wires: [] }); if (game.mode === 'sandbox') saveSandbox(); } };
 window.addEventListener('keydown', e => {
   if (e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') return;
@@ -231,8 +237,10 @@ const rd = initRead({ game, $, modal, closeModal, toast, store, load, show, rend
 const labs = initLabs({ game, $, modal, closeModal, toast, store, load, show, helper, setXray, renderInspector });
 // ---------- телефоны и планшеты ----------
 const MOBILE = matchMedia('(max-width: 760px)').matches;
-$('inspToggle').onclick = () => { const m = $('inspector').classList.toggle('min'); $('inspToggle').textContent = m ? '▴ Показать панель' : '▾ Свернуть панель'; game.scene.resize(); };
+$('inspToggle').onclick = () => { const m = $('inspector').classList.toggle('min'); $('inspToggle').textContent = m ? '☰ Панель' : '▾ Свернуть панель'; game.scene.resize(); };
 if (MOBILE) { $('viewSel').value = '3d'; $('views').className = 'v3d'; $('statusbar').textContent = ''; }
+updateFab();
+window.addEventListener('orientationchange', () => setTimeout(() => { game.scene.resize(); game.sch.render(); }, 300));
 if ('serviceWorker' in navigator && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) navigator.serviceWorker.register('sw.js').catch(() => { });
 // ---------- запуск ----------
 game.scene = new Scene3D($('view3d'), game); game.sch = new Schematic($('viewSch'), game);

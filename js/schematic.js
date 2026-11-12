@@ -122,10 +122,13 @@ export function route(a, b, n, obs = []) {
   return out.length > 1 ? out : pts;
 }
 
+const HITW = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches ? 3.4 : 1.6;   // ширина области нажатия по проводу
 export class Schematic {
   constructor(el, game) {
     this.el = el; this.game = game; this.vb = null;
-    el.addEventListener('pointerdown', e => this.down(e)); window.addEventListener('pointermove', e => this.move(e)); window.addEventListener('pointerup', e => this.up(e));
+    this.ptrs = new Map();   // активные касания: два пальца — масштаб
+    el.addEventListener('pointerdown', e => { this.ptrs.set(e.pointerId, [e.clientX, e.clientY]); if (this.ptrs.size === 2) { const [p, q] = [...this.ptrs.values()]; this.pinch = { d: Math.hypot(p[0] - q[0], p[1] - q[1]) || 1, v: { ...this.cur } }; this.dn = null; return; } this.down(e); });
+    window.addEventListener('pointermove', e => this.move(e)); window.addEventListener('pointerup', e => this.up(e)); window.addEventListener('pointercancel', e => this.up(e));
     el.addEventListener('wheel', e => { e.preventDefault(); const v = this.cur; if (!v) return; const k = e.deltaY > 0 ? 1.15 : 0.87, r = el.getBoundingClientRect(), fx = (e.clientX - r.left) / r.width, fy = (e.clientY - r.top) / r.height;
       this.vb = { x: v.x + v.w * fx * (1 - k), y: v.y + v.h * fy * (1 - k), w: v.w * k, h: v.h * k }; this.render(); }, { passive: false });
     el.addEventListener('dblclick', () => { this.vb = null; this.render(); });
@@ -141,11 +144,14 @@ export class Schematic {
     this.dn = { pan: true, x: e.clientX, y: e.clientY, v: { ...this.cur } }; g.scene.cancel(); g.select(null);
   }
   move(e) {
+    if (this.ptrs.has(e.pointerId)) this.ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+    if (this.pinch && this.ptrs.size === 2) { const [p, q] = [...this.ptrs.values()], k = this.pinch.d / (Math.hypot(p[0] - q[0], p[1] - q[1]) || 1), v = this.pinch.v; this.vb = { x: v.x + v.w * (1 - k) / 2, y: v.y + v.h * (1 - k) / 2, w: v.w * k, h: v.h * k }; this.render(); return; }
     const d = this.dn; if (!d || d.press) return; const u = this.unit(), dx = (e.clientX - d.x) * u, dy = (e.clientY - d.y) * u;
     if (d.pan) { this.vb = { ...d.v, x: d.v.x - dx, y: d.v.y - dy }; this.render(); return; }
     if (d.c && !d.c.locked && (d.moved || Math.hypot(dx, dy) > 1)) { d.moved = true; d.c.x = Math.round((d.cx + dx) / 1.5) * 1.5; d.c.y = Math.round(d.cy - dy); const it = this.game.scene.items.get(d.c.id); if (it) { it.g.position.set(d.c.x, d.c.y, 0); this.game.scene.rewire(d.c.id); } this.render(); }
   }
-  up() {
+  up(e) {
+    if (e) this.ptrs.delete(e.pointerId); if (this.pinch) { if (this.ptrs.size < 2) this.pinch = null; this.dn = null; return; }
     const d = this.dn; this.dn = null; if (!d) return;
     if (d.press) { d.press.state.pressed = false; return; }
     if (d.c && !d.moved) { const df = DEFS[d.c.type]; if (df.click) { df.click(d.c, 'toggle'); this.game.changed(); } } else if (d.moved) this.game.changed();
@@ -165,7 +171,7 @@ export class Schematic {
       const a = termPos(ca, w.a.t), b = termPos(cb, w.b.t); a.cx = ca.x; a.w = DEFS[ca.type].w; b.cx = cb.x; b.w = DEFS[cb.type].w;
       const pts = route(a, b, w.n || i, obs), col = wireColor(w);
       const p = pts.map(q => q[0] + ',' + (-q[1])).join(' ');
-      s += `<polyline points="${p}" stroke="${col}" stroke-width="${w === sel ? 0.7 : 0.4}" ${w.burned ? 'stroke-dasharray="0.8 0.8"' : ''}/><polyline data-w="${i}" points="${p}" stroke="transparent" stroke-width="1.6" style="cursor:pointer"/>`;
+      s += `<polyline points="${p}" stroke="${col}" stroke-width="${w === sel ? 0.7 : 0.4}" ${w.burned ? 'stroke-dasharray="0.8 0.8"' : ''}/><polyline data-w="${i}" points="${p}" stroke="transparent" stroke-width="${HITW}" style="cursor:pointer"/>`;
       for (const k of [w.a.c + '.' + w.a.t, w.b.c + '.' + w.b.t]) cnt[k] = (cnt[k] || 0) + 1;
       if (g.showVals && w.i > 1e-3) {
         const segs = pts.slice(0, -1).map((p, q) => [Math.abs(pts[q + 1][0] - p[0]) + Math.abs(pts[q + 1][1] - p[1]), q]).sort((x, y) => y[0] - x[0]), t = fmt(w.i) + 'А', lw = t.length * 0.62 + 0.8;
