@@ -1,0 +1,20 @@
+{
+  "name": "ЭлектроЛаб — электротехника в 3D",
+  "short_name": "ЭлектроЛаб",
+  "description": "Игра-тренажёр по электротехнике",
+  "lang": "ru",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#10151c",
+  "theme_color": "#18212b",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

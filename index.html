@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#18212b">
+<meta name="description" content="Игра-тренажёр по электротехнике: собирай схемы в 3D, читай и рисуй принципиальные схемы, проходи лабораторные работы.">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>ЭлектроЛаб — электротехника в 3D</title>
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">
+{ "imports": {
+  "three": "./vendor/three.module.min.js",
+  "three/addons/": "./vendor/addons/"
+} }
+</script>
+</head>
+<body>
+<!-- Главное меню -->
+<div id="menu" class="screen">
+  <div class="menu-inner">
+    <h1>⚡ ЭлектроЛаб</h1>
+    <p class="sub">Электротехника от закона Ома до щита 0,4 кВ — собирай схемы в 3D и смотри, что произойдёт</p>
+    <div class="menu-btns">
+      <button id="btnSandbox" class="big">🧰 Свободная сборка</button>
+      <button id="btnBook" class="big">📖 Справочник</button>
+      <button id="btnQuiz" class="big">🎓 Экзамен</button>
+    </div>
+    <div id="rankBox"></div>
+    <div id="levelGrid"></div>
+  </div>
+</div>
+
+<!-- Игровой экран -->
+<div id="game" class="screen hidden">
+  <header id="top">
+    <button id="btnMenu" title="В меню">☰ Меню</button>
+    <div id="lvlTitle"></div>
+    <div class="spacer"></div>
+    <button id="btnTask">🎯 Задание</button>
+    <button id="btnHint">💡 Подсказка</button>
+    <button id="btnSolve">🧩 Решение</button>
+    <span class="sep"></span>
+    <button id="btnXray" class="toggle" title="Прозрачные корпуса — видно, что внутри">🔍 Разрез</button>
+    <button id="btnVals" class="toggle on" title="Показывать токи на проводах">A Токи</button>
+    <select id="viewSel" title="Вид">
+      <option value="both">3D + схема</option>
+      <option value="3d">Только 3D</option>
+      <option value="sch">Только схема</option>
+    </select>
+    <button id="btnReset" title="Вернуть схему к началу">↺ Сброс</button>
+    <button id="btnBook2">📖</button>
+  </header>
+  <div id="main">
+    <aside id="palette"></aside>
+    <div id="views">
+      <div id="view3d"><div id="hud"></div></div>
+      <div id="viewSch"></div>
+    </div>
+    <aside id="inspector"><button id="inspToggle">▾ Свернуть панель</button><div id="inspBody"></div></aside>
+  </div>
+  <div id="toasts"></div>
+  <div id="statusbar"></div>
+</div>
+
+<div id="modal" class="hidden"><div id="modalBox"><button id="modalClose">✕</button><div id="modalBody"></div></div></div>
+<div id="flash"></div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
